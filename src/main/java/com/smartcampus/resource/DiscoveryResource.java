@@ -1,22 +1,18 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.smartcampus.resource;
 
-import javax.ws.rs.core.Context;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Part 1.2 - Discovery Endpoint
+ * Part 1.2 - Discovery endpoint
  * GET /api/v1 returns API metadata with HATEOAS-style resource links.
  */
 @Path("/")
@@ -26,7 +22,6 @@ public class DiscoveryResource {
     @GET
     public Response discover(@Context UriInfo uriInfo) {
         Map<String, Object> response = new LinkedHashMap<String, Object>();
-        String baseUri = uriInfo.getBaseUri().toString();
 
         response.put("api", "Smart Campus Sensor and Room Management API");
         response.put("version", "1.0.0");
@@ -40,26 +35,35 @@ public class DiscoveryResource {
         response.put("contact", contact);
 
         Map<String, Object> resources = new LinkedHashMap<String, Object>();
-        resources.put("rooms", buildLink(baseUri + "rooms", "GET, POST",
+        resources.put("rooms", buildLink(uriInfo, "rooms", "GET, POST",
                 "List all rooms or create a new room"));
-        resources.put("room", buildLink(baseUri + "rooms/{roomId}", "GET, DELETE",
+        resources.put("room", buildLink(uriInfo, "rooms/{roomId}", "GET, DELETE",
                 "Retrieve or decommission a specific room"));
-        resources.put("sensors", buildLink(baseUri + "sensors", "GET, POST",
+        resources.put("sensors", buildLink(uriInfo, "sensors", "GET, POST",
                 "List sensors (supports ?type= filter) or register a new sensor"));
-        resources.put("sensor", buildLink(baseUri + "sensors/{sensorId}", "GET",
+        resources.put("sensor", buildLink(uriInfo, "sensors/{sensorId}", "GET",
                 "Retrieve a specific sensor by ID"));
-        resources.put("readings", buildLink(baseUri + "sensors/{sensorId}/readings", "GET, POST",
+        resources.put("readings", buildLink(uriInfo, "sensors/{sensorId}/readings", "GET, POST",
                 "Get or append historical readings for a sensor"));
         response.put("resources", resources);
 
         return Response.ok(response).build();
     }
 
-    private Map<String, Object> buildLink(String href, String methods, String description) {
+    private Map<String, Object> buildLink(UriInfo uriInfo, String relativePath,
+                                          String methods, String description) {
         Map<String, Object> link = new LinkedHashMap<String, Object>();
-        link.put("href", href);
+        link.put("href", buildHref(uriInfo, relativePath));
         link.put("methods", methods);
         link.put("description", description);
         return link;
+    }
+
+    private String buildHref(UriInfo uriInfo, String relativePath) {
+        String baseUri = uriInfo.getBaseUri().toString();
+        if (!baseUri.endsWith("/")) {
+            baseUri = baseUri + "/";
+        }
+        return baseUri + relativePath;
     }
 }

@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.smartcampus.resource;
 
 import com.smartcampus.application.DataStore;
@@ -9,16 +5,18 @@ import com.smartcampus.exception.SensorUnavailableException;
 import com.smartcampus.model.ErrorResponse;
 import com.smartcampus.model.Sensor;
 import com.smartcampus.model.SensorReading;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import java.util.List;
 
 /**
- * Part 4 - Sub-Resource for sensor readings.
+ * Part 4 - Sub-resource for sensor readings.
  * Handles GET and POST for /api/v1/sensors/{sensorId}/readings
  * Instantiated by SensorResource via the sub-resource locator pattern.
  */
@@ -34,24 +32,20 @@ public class SensorReadingResource {
         this.store = store;
     }
 
-    // GET /api/v1/sensors/{sensorId}/readings — fetch reading history (200 OK)
     @GET
     public Response getReadings() {
         List<SensorReading> history = store.getReadingsForSensor(sensorId);
         return Response.ok(history).build();
     }
 
-    // POST /api/v1/sensors/{sensorId}/readings — add new reading (201 | 400 | 403)
-    // Side effect: updates parent Sensor.currentValue (Part 4.2)
     @POST
     public Response addReading(SensorReading reading, @Context UriInfo uriInfo) {
         Sensor sensor = store.getSensors().get(sensorId);
 
-        // Part 5.3 — block readings for MAINTENANCE sensors
         if ("MAINTENANCE".equalsIgnoreCase(sensor.getStatus())) {
             throw new SensorUnavailableException(
-                "Sensor '" + sensorId + "' is currently under MAINTENANCE "
-                + "and cannot accept new readings."
+                    "Sensor '" + sensorId + "' is currently under MAINTENANCE "
+                    + "and cannot accept new readings."
             );
         }
 
@@ -65,12 +59,9 @@ public class SensorReadingResource {
 
         SensorReading newReading = new SensorReading(reading.getValue());
         store.addReading(sensorId, newReading);
-
-        // Part 4.2 side effect — keep parent sensor currentValue in sync
         sensor.setCurrentValue(newReading.getValue());
 
-        return Response
-                .created(uriInfo.getAbsolutePathBuilder().path(newReading.getId()).build())
+        return Response.created(uriInfo.getAbsolutePathBuilder().path(newReading.getId()).build())
                 .entity(newReading)
                 .build();
     }

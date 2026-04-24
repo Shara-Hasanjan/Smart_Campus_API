@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.smartcampus.resource;
 
 import com.smartcampus.application.DataStore;
@@ -9,12 +5,17 @@ import com.smartcampus.exception.LinkedResourceNotFoundException;
 import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.model.ErrorResponse;
 import com.smartcampus.model.Sensor;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,19 +30,17 @@ public class SensorResource {
 
     private final DataStore store = DataStore.getInstance();
 
-    // GET /api/v1/sensors — list sensors, optional ?type= filter (200 OK)
     @GET
     public Response getSensors(@QueryParam("type") String type) {
         List<Sensor> result = new ArrayList<Sensor>();
-        for (Sensor s : store.getSensors().values()) {
-            if (type == null || s.getType().equalsIgnoreCase(type)) {
-                result.add(s);
+        for (Sensor sensor : store.getSensors().values()) {
+            if (type == null || sensor.getType().equalsIgnoreCase(type)) {
+                result.add(sensor);
             }
         }
         return Response.ok(result).build();
     }
 
-    // POST /api/v1/sensors — register a new sensor (201 | 400 | 409 | 422)
     @POST
     public Response createSensor(Sensor sensor, @Context UriInfo uriInfo) {
         if (sensor == null || sensor.getId() == null || sensor.getId().trim().isEmpty()) {
@@ -56,11 +55,10 @@ public class SensorResource {
                     .entity(new ErrorResponse(400, "Bad Request", "Sensor 'type' field is required."))
                     .build();
         }
-        // 422: error is inside the request body — the roomId reference is invalid
         if (sensor.getRoomId() == null || !store.getRooms().containsKey(sensor.getRoomId())) {
             throw new LinkedResourceNotFoundException(
-                "roomId '" + sensor.getRoomId() + "' does not exist. "
-                + "Register the room first before assigning sensors to it."
+                    "roomId '" + sensor.getRoomId() + "' does not exist. "
+                    + "Register the room first before assigning sensors to it."
             );
         }
         if (store.getSensors().containsKey(sensor.getId())) {
@@ -73,16 +71,15 @@ public class SensorResource {
         if (sensor.getStatus() == null || sensor.getStatus().trim().isEmpty()) {
             sensor.setStatus("ACTIVE");
         }
+
         store.getSensors().put(sensor.getId(), sensor);
         store.getRooms().get(sensor.getRoomId()).getSensorIds().add(sensor.getId());
 
-        return Response
-                .created(uriInfo.getAbsolutePathBuilder().path(sensor.getId()).build())
+        return Response.created(uriInfo.getAbsolutePathBuilder().path(sensor.getId()).build())
                 .entity(sensor)
                 .build();
     }
 
-    // GET /api/v1/sensors/{sensorId} — get sensor by ID (200 | 404)
     @GET
     @Path("/{sensorId}")
     public Response getSensorById(@PathParam("sensorId") String sensorId) {
@@ -93,10 +90,6 @@ public class SensorResource {
         return Response.ok(sensor).build();
     }
 
-    /**
-     * Part 4.1 - Sub-Resource Locator
-     * Validates parent sensor exists, then delegates to SensorReadingResource.
-     */
     @Path("/{sensorId}/readings")
     public SensorReadingResource getReadingResource(@PathParam("sensorId") String sensorId) {
         if (!store.getSensors().containsKey(sensorId)) {

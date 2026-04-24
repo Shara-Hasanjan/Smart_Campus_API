@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.smartcampus.resource;
 
 import com.smartcampus.application.DataStore;
@@ -9,12 +5,17 @@ import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.exception.RoomNotEmptyException;
 import com.smartcampus.model.ErrorResponse;
 import com.smartcampus.model.Room;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,14 +30,12 @@ public class RoomResource {
 
     private final DataStore store = DataStore.getInstance();
 
-    // GET /api/v1/rooms — list all rooms (200 OK)
     @GET
     public Response getAllRooms() {
         List<Room> rooms = new ArrayList<Room>(store.getRooms().values());
         return Response.ok(rooms).build();
     }
 
-    // POST /api/v1/rooms — create a new room (201 | 400 | 409)
     @POST
     public Response createRoom(Room room, @Context UriInfo uriInfo) {
         if (room == null || room.getId() == null || room.getId().trim().isEmpty()) {
@@ -59,13 +58,11 @@ public class RoomResource {
                     .build();
         }
         store.getRooms().put(room.getId(), room);
-        return Response
-                .created(uriInfo.getAbsolutePathBuilder().path(room.getId()).build())
+        return Response.created(uriInfo.getAbsolutePathBuilder().path(room.getId()).build())
                 .entity(room)
                 .build();
     }
 
-    // GET /api/v1/rooms/{roomId} — get room by ID (200 | 404)
     @GET
     @Path("/{roomId}")
     public Response getRoomById(@PathParam("roomId") String roomId) {
@@ -76,7 +73,6 @@ public class RoomResource {
         return Response.ok(room).build();
     }
 
-    // DELETE /api/v1/rooms/{roomId} — delete room (204 | 404 | 409)
     @DELETE
     @Path("/{roomId}")
     public Response deleteRoom(@PathParam("roomId") String roomId) {
@@ -90,9 +86,9 @@ public class RoomResource {
         }
         if (!room.getSensorIds().isEmpty()) {
             throw new RoomNotEmptyException(
-                "Room '" + roomId + "' cannot be deleted. It currently has "
-                + room.getSensorIds().size()
-                + " sensor(s) assigned. Decommission all sensors before removing the room."
+                    "Room '" + roomId + "' cannot be deleted. It currently has "
+                    + room.getSensorIds().size()
+                    + " sensor(s) assigned. Decommission all sensors before removing the room."
             );
         }
         store.getRooms().remove(roomId);
